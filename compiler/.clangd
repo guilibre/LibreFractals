@@ -1,0 +1,8 @@
+CompileFlags:
+  Remove:
+    - -sWASM*
+    - -sASSERTIONS*
+    - -sMODULARIZE*
+    - -sEXPORT_ES6*
+    - -sALLOW_MEMORY_GROWTH*
+    - -lembind

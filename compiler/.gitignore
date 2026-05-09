@@ -1,0 +1,4 @@
+.cache
+*.frac
+*.svg
+build*

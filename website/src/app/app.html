@@ -1,0 +1,20 @@
+<div class="layout" #layout>
+  <aside class="panel-input" #inputPanel>
+    <h1>LibreFractals</h1>
+    <textarea [(ngModel)]="source" spellcheck="false"></textarea>
+    <button (click)="render()" [disabled]="loading()">
+      {{ loading() ? "Rendering…" : "Render" }}
+    </button>
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+  </aside>
+  <div class="resizer" (mousedown)="startResize($event)"></div>
+  <main class="panel-svg">
+    @if (svg()) {
+      <div class="svg-container" [innerHTML]="svg()"></div>
+    } @else {
+      <p class="placeholder">Enter an expression and click Render.</p>
+    }
+  </main>
+</div>
