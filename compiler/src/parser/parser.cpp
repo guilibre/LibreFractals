@@ -203,6 +203,39 @@ auto parse_branch(ParserState &state)
     };
 }
 
+auto parse_alias(ParserState &state)
+    -> std::variant<AliasDecl, Tokenizer::Error, std::monostate> {
+    const auto *var_tok = state.peek();
+    if (var_tok == nullptr || var_tok->type != Tokenizer::VARIABLE)
+        return std::monostate{};
+
+    size_t saved = state.pos;
+    state.pos++;
+    const auto *eq = state.peek();
+    if (eq == nullptr || eq->type != Tokenizer::EQUALS) {
+        state.pos = saved;
+        return std::monostate{};
+    }
+    char name = var_tok->value[0];
+    state.pos++;
+
+    auto sym_result = parse_symbol(state);
+    if (std::holds_alternative<std::monostate>(sym_result))
+        return state.current_error();
+    if (std::holds_alternative<Tokenizer::Error>(sym_result))
+        return std::get<Tokenizer::Error>(sym_result);
+
+    auto &sym = std::get<Symbol>(sym_result);
+    if (std::holds_alternative<SymbolVar>(sym) ||
+        std::holds_alternative<std::unique_ptr<SymbolBranch>>(sym))
+        return state.current_error();
+
+    if (state.expect(Tokenizer::SEMICOLON) == nullptr)
+        return state.current_error();
+
+    return AliasDecl{.variable = name, .symbol = std::move(sym)};
+}
+
 auto parse_rule(ParserState &state)
     -> std::variant<Rule, Tokenizer::Error, std::monostate> {
     const auto *var = state.expect(Tokenizer::VARIABLE);
@@ -287,6 +320,27 @@ auto parse(const std::vector<Tokenizer::TokenResult> &tokens) -> ParseResult {
             if (state.expect(Tokenizer::SEMICOLON) == nullptr)
                 out.errors.push_back(state.current_error());
             continue;
+        }
+
+        {
+            auto alias = parse_alias(state);
+            if (std::holds_alternative<AliasDecl>(alias)) {
+                out.program.aliases.push_back(
+                    std::move(std::get<AliasDecl>(alias)));
+                continue;
+            }
+            if (std::holds_alternative<Tokenizer::Error>(alias)) {
+                out.errors.push_back(std::get<Tokenizer::Error>(alias));
+                while (true) {
+                    const auto *t = state.peek();
+                    if (t == nullptr || t->type == Tokenizer::END_OF_FILE)
+                        break;
+                    const bool semi = (t->type == Tokenizer::SEMICOLON);
+                    state.advance();
+                    if (semi) break;
+                }
+                continue;
+            }
         }
 
         auto result = parse_rule(state);

@@ -86,8 +86,8 @@ auto main(int argc, char *argv[]) -> int {
 
     if (!parse_result.errors.empty()) {
         for (const auto &err : parse_result.errors)
-            std::cerr << "parse error at " << err.line << ':'
-                      << err.column_start << '\n';
+            std::cerr << "parse error at " << err.line + 1 << ':'
+                      << err.column_start + 1 << '\n';
     }
 
     if (parse_result.program.axiom.empty()) {
@@ -115,6 +115,9 @@ auto main(int argc, char *argv[]) -> int {
 }
 
 #ifdef __EMSCRIPTEN__
+#include "lsp/completions.hpp"
+#include "lsp/diagnostics.hpp"
+#include "lsp/hover.hpp"
 #include <emscripten/bind.h>
 
 static auto compile_to_svg(const std::string &source) -> std::string {
@@ -129,16 +132,36 @@ static auto compile_to_turtle(const std::string &source) -> std::string {
     auto tokens = Tokenizer::tokenize(source);
     auto result = Parser::parse(tokens);
     if (result.program.axiom.empty()) return "ERROR: no axiom";
-    std::string info = "steps=" + std::to_string(result.program.steps) +
-                       " rules=" + std::to_string(result.program.rules.size()) +
-                       " axiom_syms=" + std::to_string(result.program.axiom.size()) +
-                       " errors=" + std::to_string(result.errors.size()) + "\n";
+    std::string info =
+        "steps=" + std::to_string(result.program.steps) +
+        " rules=" + std::to_string(result.program.rules.size()) +
+        " axiom_syms=" + std::to_string(result.program.axiom.size()) +
+        " errors=" + std::to_string(result.errors.size()) + "\n";
     auto cmds = Codegen::expand(result.program);
     return info + Codegen::to_string(cmds);
+}
+
+static auto lsp_get_diagnostics(const std::string &source) -> std::string {
+    return Lsp::get_diagnostics(source);
+}
+
+static auto lsp_get_hover(const std::string &source, int line, int col)
+    -> std::string {
+    return Lsp::get_hover(source, static_cast<size_t>(line),
+                          static_cast<size_t>(col));
+}
+
+static auto lsp_get_completions(const std::string &source, int line, int col)
+    -> std::string {
+    return Lsp::get_completions(source, static_cast<size_t>(line),
+                                static_cast<size_t>(col));
 }
 
 EMSCRIPTEN_BINDINGS(librefractals) {
     emscripten::function("compile_to_svg", &compile_to_svg);
     emscripten::function("compile_to_turtle", &compile_to_turtle);
+    emscripten::function("get_diagnostics", &lsp_get_diagnostics);
+    emscripten::function("get_hover", &lsp_get_hover);
+    emscripten::function("get_completions", &lsp_get_completions);
 }
 #endif

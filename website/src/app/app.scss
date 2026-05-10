@@ -70,23 +70,11 @@
     flex-shrink: 0;
   }
 
-  textarea {
+  app-editor {
     flex: 1;
     min-height: 0;
-    resize: none;
-    background: #111;
-    color: #cfc;
-    border: 1px solid #333;
-    border-radius: 4px;
-    padding: 0.6rem;
-    font-family: monospace;
-    font-size: 0.85rem;
-    line-height: 1.5;
-    outline: none;
-
-    &:focus {
-      border-color: #555;
-    }
+    display: flex;
+    flex-direction: column;
   }
 
   button {

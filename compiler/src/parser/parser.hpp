@@ -69,8 +69,14 @@ struct Rule {
     std::vector<Branch> branches;
 };
 
+struct AliasDecl {
+    char variable;
+    Symbol symbol;
+};
+
 struct Program {
     std::vector<Rule> rules;
+    std::vector<AliasDecl> aliases;
     std::vector<Symbol> axiom;
     int steps = 1;
     std::optional<uint32_t> seed;

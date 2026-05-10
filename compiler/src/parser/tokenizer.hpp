@@ -32,6 +32,7 @@ enum TokenType : uint8_t {
     BANG,
     QUESTION,
     PERCENT,
+    EQUALS,
 };
 
 struct Token {

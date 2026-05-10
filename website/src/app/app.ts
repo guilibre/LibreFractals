@@ -9,22 +9,23 @@ import {
   HostListener,
 } from "@angular/core";
 import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
-import { FormsModule } from "@angular/forms";
 import { FractalService } from "./fractal.service";
+import { EditorComponent } from "./editor/editor";
 
-const DEFAULT_SOURCE = `!32;
-@V(100) S(70) H(200) a;
-?5;
+const DEFAULT_SOURCE = `!6;
+@S(50)V(50)mx;
 
-a -> 0.9 ~ F(1) +(7) %(0.9) a
-   | 0.1 ~ [+(40) H(50) *(0.78) b] [-(40) H(-35) *(0.78) b] F(1) a;
+x=F(1);
+f=F(1);
+p=-(25);
+m=+(25);
 
-b -> 0.88 ~ H(10) F(1) -(6) *(0.96) %(0.9) b
-   | 0.12 ~ [+(38) *(0.82) a] [-(38) H(70) *(0.82) a];`;
+x -> H(10)fp[[x]mx]mf[mfx]px;
+f -> ff;`;
 
 @Component({
   selector: "app-root",
-  imports: [FormsModule],
+  imports: [EditorComponent],
   templateUrl: "./app.html",
   styleUrl: "./app.scss",
 })
@@ -38,7 +39,9 @@ export class App implements AfterViewInit, OnDestroy {
   private static readonly STORAGE_KEY = "librefractals_source";
   private _source = localStorage.getItem(App.STORAGE_KEY) ?? DEFAULT_SOURCE;
 
-  get source() { return this._source; }
+  get source() {
+    return this._source;
+  }
   set source(v: string) {
     this._source = v;
     localStorage.setItem(App.STORAGE_KEY, v);

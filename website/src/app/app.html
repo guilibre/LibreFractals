@@ -1,7 +1,7 @@
 <div class="layout" #layout>
   <aside class="panel-input" #inputPanel>
     <h1>LibreFractals</h1>
-    <textarea [(ngModel)]="source" spellcheck="false"></textarea>
+    <app-editor [(value)]="source"></app-editor>
     <button (click)="render()" [disabled]="loading()">
       {{ loading() ? "Rendering…" : "Render" }}
     </button>

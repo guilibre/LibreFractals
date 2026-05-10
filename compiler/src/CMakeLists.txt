@@ -11,5 +11,13 @@ add_library(renderer STATIC
 target_include_directories(renderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(renderer PRIVATE parser)
 
+add_library(lsp STATIC
+    lsp/diagnostics.cpp
+    lsp/hover.cpp
+    lsp/completions.cpp
+)
+target_include_directories(lsp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(lsp PRIVATE parser)
+
 add_executable(LibreFractals main.cpp)
-target_link_libraries(LibreFractals PRIVATE parser renderer)
+target_link_libraries(LibreFractals PRIVATE parser renderer lsp)

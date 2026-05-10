@@ -62,10 +62,11 @@ auto clone_symbols(const std::vector<Parser::Symbol> &src)
 }
 
 auto emit_symbols(const std::vector<Parser::Symbol> &symbols,
-                  std::vector<TurtleCmd> &out) -> void;
+                  const Parser::Program &program, std::vector<TurtleCmd> &out)
+    -> void;
 
-auto emit_symbol(const Parser::Symbol &sym, std::vector<TurtleCmd> &out)
-    -> void {
+auto emit_symbol(const Parser::Symbol &sym, const Parser::Program &program,
+                 std::vector<TurtleCmd> &out) -> void {
     std::visit(
         [&](const auto &s) -> auto {
             using T = std::decay_t<decltype(s)>;
@@ -90,17 +91,25 @@ auto emit_symbol(const Parser::Symbol &sym, std::vector<TurtleCmd> &out)
             else if constexpr (std::is_same_v<
                                    T, std::unique_ptr<Parser::SymbolBranch>>) {
                 out.push_back({.type = TurtleCmdType::PUSH, .value = 0.F});
-                emit_symbols(s->symbols, out);
+                emit_symbols(s->symbols, program, out);
                 out.push_back({.type = TurtleCmdType::POP, .value = 0.F});
+            } else if constexpr (std::is_same_v<T, Parser::SymbolVar>) {
+                for (const auto &alias : program.aliases) {
+                    if (alias.variable == s.name) {
+                        emit_symbol(alias.symbol, program, out);
+                        return;
+                    }
+                }
+                // sem alias: descartado silenciosamente
             }
-            // SymbolVar sem regra: descartado silenciosamente
         },
         sym);
 }
 
 auto emit_symbols(const std::vector<Parser::Symbol> &symbols,
-                  std::vector<TurtleCmd> &out) -> void {
-    for (const auto &sym : symbols) emit_symbol(sym, out);
+                  const Parser::Program &program, std::vector<TurtleCmd> &out)
+    -> void {
+    for (const auto &sym : symbols) emit_symbol(sym, program, out);
 }
 
 auto expand_symbols(const std::vector<Parser::Symbol> &syms,
@@ -156,7 +165,7 @@ auto expand(const Parser::Program &program) -> std::vector<TurtleCmd> {
         current = expand_symbols(current, program, rng);
 
     std::vector<TurtleCmd> cmds;
-    emit_symbols(current, cmds);
+    emit_symbols(current, program, cmds);
     return cmds;
 }
 

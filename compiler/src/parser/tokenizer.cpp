@@ -5,13 +5,13 @@ namespace Tokenizer {
 auto tokenize(const std::string &input) -> std::vector<TokenResult> {
     std::vector<TokenResult> tokens;
     size_t i = 0;
-    size_t line = 1;
-    size_t column = 1;
+    size_t line = 0;
+    size_t column = 0;
 
     auto advance = [&]() -> void {
         if (i < input.size() && input[i] == '\n') {
             ++line;
-            column = 1;
+            column = 0;
         } else {
             ++column;
         }
@@ -111,6 +111,17 @@ auto tokenize(const std::string &input) -> std::vector<TokenResult> {
             tokens.emplace_back(Token{
                 .type = PERCENT,
                 .value = "%",
+                .line = tok_line,
+                .column = tok_col,
+                .length = 1,
+            });
+            advance();
+            continue;
+        }
+        if (c == '=') {
+            tokens.emplace_back(Token{
+                .type = EQUALS,
+                .value = "=",
                 .line = tok_line,
                 .column = tok_col,
                 .length = 1,
