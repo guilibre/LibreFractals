@@ -1,0 +1,87 @@
+.player {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  height: 100%;
+  background: #111;
+  overflow: hidden;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  flex-shrink: 0;
+  width: 80px;
+}
+
+.play-btn,
+.stop-btn {
+  background: none;
+  border: 1px solid #555;
+  color: #eee;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    border-color: #aaa;
+    color: #fff;
+  }
+}
+
+.time {
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: #888;
+  white-space: nowrap;
+}
+
+.spectrogram-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    display: block;
+  }
+
+  .playhead-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 0, 0.8);
+    pointer-events: none;
+    will-change: left;
+    display: none;
+  }
+}
+
+.spectrogram-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 17, 17, 0.85);
+  color: #888;
+  font-size: 0.8rem;
+  pointer-events: none;
+}

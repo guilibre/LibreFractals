@@ -8,7 +8,7 @@
 #include <sstream>
 #include <utility>
 
-namespace Renderer {
+namespace Image {
 
 namespace {
 
@@ -196,4 +196,4 @@ auto to_svg(const std::vector<Codegen::TurtleCmd> &cmds, const SvgOptions &opts)
     return ss.str();
 }
 
-} // namespace Renderer
+} // namespace Image

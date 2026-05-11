@@ -1,5 +1,7 @@
 #include "parser/codegen.hpp"
 #include "parser/parser.hpp"
+#include "renderer/audio.hpp"
+#include "renderer/midi.hpp"
 #include "renderer/svg.hpp"
 #include <fstream>
 #include <iostream>
@@ -17,8 +19,10 @@ auto usage(const char *prog) -> void {
         << "\n"
         << "Options:\n"
         << "  -f, --file           Treat <input> as a file path\n"
-        << "  -o, --output <path>  Write output to file instead of stdout\n"
-        << "  --svg                Output SVG instead of turtle IR\n"
+        << "  -o, --output <path>  Write turtle IR to file instead of stdout\n"
+        << "  --svg <path>         Write SVG to file\n"
+        << "  --midi <path>        Write MIDI to file\n"
+        << "  --wav <path>         Write WAV to file\n"
         << "  -h, --help           Show this help message\n";
 }
 
@@ -26,9 +30,11 @@ auto usage(const char *prog) -> void {
 
 auto main(int argc, char *argv[]) -> int {
     bool from_file = false;
-    bool output_svg = false;
     std::string input;
-    std::string output_path;
+    std::string svg_path;
+    std::string midi_path;
+    std::string wav_path;
+    std::string ir_path;
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -40,14 +46,29 @@ auto main(int argc, char *argv[]) -> int {
         if (arg == "-f" || arg == "--file") {
             from_file = true;
         } else if (arg == "--svg") {
-            output_svg = true;
+            if (++i >= argc) {
+                std::cerr << "Error: --svg requires a path argument\n";
+                return 1;
+            }
+            svg_path = argv[i];
+        } else if (arg == "--midi") {
+            if (++i >= argc) {
+                std::cerr << "Error: --midi requires a path argument\n";
+                return 1;
+            }
+            midi_path = argv[i];
+        } else if (arg == "--wav") {
+            if (++i >= argc) {
+                std::cerr << "Error: --wav requires a path argument\n";
+                return 1;
+            }
+            wav_path = argv[i];
         } else if (arg == "-o" || arg == "--output") {
             if (++i >= argc) {
                 std::cerr << "Error: " << arg << " requires a path argument\n";
-                usage(argv[0]);
                 return 1;
             }
-            output_path = argv[i];
+            ir_path = argv[i];
         } else if (arg.starts_with('-')) {
             std::cerr << "Unknown option: " << arg << "\n";
             usage(argv[0]);
@@ -55,7 +76,6 @@ auto main(int argc, char *argv[]) -> int {
         } else {
             if (!input.empty()) {
                 std::cerr << "Error: multiple inputs provided\n";
-                usage(argv[0]);
                 return 1;
             }
             input = arg;
@@ -96,19 +116,36 @@ auto main(int argc, char *argv[]) -> int {
     }
 
     auto cmds = Codegen::expand(parse_result.program);
-    std::string result =
-        output_svg ? Renderer::to_svg(cmds) : Codegen::to_string(cmds);
 
-    if (!output_path.empty()) {
-        std::ofstream out(output_path);
+    if (!svg_path.empty()) {
+        std::ofstream out(svg_path);
         if (!out) {
-            std::cerr << "Error: cannot open output file: " << output_path
-                      << "\n";
+            std::cerr << "Error: cannot open output file: " << svg_path << "\n";
             return 1;
         }
-        out << result;
-    } else {
-        std::cout << result;
+        out << Image::to_svg(cmds);
+    }
+
+    if (!midi_path.empty() || !wav_path.empty()) {
+        const float min_dur = parse_result.program.min_duration.value_or(0.1F);
+        auto notes = Midi::compile(cmds, min_dur);
+        if (!midi_path.empty()) Midi::write(notes, midi_path);
+        if (!wav_path.empty()) Audio::to_wav(notes, wav_path);
+    }
+
+    if (svg_path.empty() && midi_path.empty() && wav_path.empty()) {
+        std::string ir = Codegen::to_string(cmds);
+        if (!ir_path.empty()) {
+            std::ofstream out(ir_path);
+            if (!out) {
+                std::cerr << "Error: cannot open output file: " << ir_path
+                          << "\n";
+                return 1;
+            }
+            out << ir;
+        } else {
+            std::cout << ir;
+        }
     }
 
     return 0;
@@ -120,12 +157,41 @@ auto main(int argc, char *argv[]) -> int {
 #include "lsp/hover.hpp"
 #include <emscripten/bind.h>
 
+static auto base64_encode(const std::vector<uint8_t> &data) -> std::string {
+    static constexpr std::string_view table =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string out;
+    out.reserve(((data.size() + 2) / 3) * 4);
+    for (size_t i = 0; i < data.size(); i += 3) {
+        const uint32_t b0 = data[i];
+        const uint32_t b1 = (i + 1 < data.size()) ? data[i + 1] : 0;
+        const uint32_t b2 = (i + 2 < data.size()) ? data[i + 2] : 0;
+        const uint32_t triple = (b0 << 16) | (b1 << 8) | b2;
+        out.push_back(table[(triple >> 18) & 0x3F]);
+        out.push_back(table[(triple >> 12) & 0x3F]);
+        out.push_back((i + 1 < data.size()) ? table[(triple >> 6) & 0x3F]
+                                            : '=');
+        out.push_back((i + 2 < data.size()) ? table[triple & 0x3F] : '=');
+    }
+    return out;
+}
+
+static auto compile_to_wav(const std::string &source) -> std::string {
+    auto tokens = Tokenizer::tokenize(source);
+    auto result = Parser::parse(tokens);
+    if (result.program.axiom.empty()) return "";
+    auto cmds = Codegen::expand(result.program);
+    const float min_dur = result.program.min_duration.value_or(0.1F);
+    auto notes = Midi::compile(cmds, min_dur);
+    return base64_encode(Audio::to_bytes(notes));
+}
+
 static auto compile_to_svg(const std::string &source) -> std::string {
     auto tokens = Tokenizer::tokenize(source);
     auto result = Parser::parse(tokens);
     if (result.program.axiom.empty()) return "";
     auto cmds = Codegen::expand(result.program);
-    return Renderer::to_svg(cmds);
+    return Image::to_svg(cmds);
 }
 
 static auto compile_to_turtle(const std::string &source) -> std::string {
@@ -158,6 +224,7 @@ static auto lsp_get_completions(const std::string &source, int line, int col)
 }
 
 EMSCRIPTEN_BINDINGS(librefractals) {
+    emscripten::function("compile_to_wav", &compile_to_wav);
     emscripten::function("compile_to_svg", &compile_to_svg);
     emscripten::function("compile_to_turtle", &compile_to_turtle);
     emscripten::function("get_diagnostics", &lsp_get_diagnostics);

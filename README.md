@@ -1,58 +1,51 @@
 # LibreFractals
 
-A fractal description language with a compiler targeting SVG, with a web playground powered by WebAssembly.
+A domain-specific language for L-system fractals, with a compiler that outputs SVG and a browser playground powered by WebAssembly.
 
 **Live demo:** https://guilibre.github.io/LibreFractals/
 
-## Overview
-
-LibreFractals provides a small domain-specific language (`.frac`) for describing L-system fractals. The compiler parses the language, expands rewrite rules, and renders the result as an SVG via a turtle graphics renderer. The same compiler is compiled to WebAssembly and embedded in an Angular web app so fractals can be generated directly in the browser.
-
-## Repository structure
-
-```
-compiler/      C++23 compiler (parser, codegen, SVG renderer)
-website/       Angular frontend that loads the WASM module
-build-wasm.sh  Builds the compiler to WASM and copies it into the website
-```
-
 ## Language
 
-A `.frac` file has three parts:
+A `.frac` file is made of three parts: a step count, an axiom, and rewrite rules.
 
-| Line                         | Meaning                   |
-| ---------------------------- | ------------------------- |
-| `!<n>;`                      | Number of expansion steps |
-| `@<symbols>;`                | Axiom (initial string)    |
-| `<symbol> -> <replacement>;` | Rewrite rule              |
+### Directives
 
-Draw commands:
+| Directive                                      | Meaning                                          |
+| ---------------------------------------------- | ------------------------------------------------ |
+| `!<n>;`                                        | Number of expansion steps                        |
+| `@<symbols>;`                                  | Axiom — the initial symbol string                |
+| `?<n>;`                                        | Random seed (required for stochastic rules)      |
+| `<var> -> <symbols>;`                          | Deterministic rewrite rule                       |
+| `<var> -> <p> ~ <symbols> \| <p> ~ <symbols>;` | Stochastic rule — branches chosen by probability |
 
-| Symbol    | Effect                                                  |
-| --------- | ------------------------------------------------------- |
-| `F(<n>)`  | Draw forward by `n` units                               |
-| `B(<n>)`  | Step forward by `n` units without drawing               |
-| `+(<n>)`  | Rotate left (counter-clockwise) by `n` degrees          |
-| `-(<n>)`  | Rotate right (clockwise) by `n` degrees                 |
-| `*(<n>)`  | Multiply current scale by `n`                           |
-| `%(<n>)`  | Multiply current stroke width by `n`                    |
-| `H(<n>)`  | Shift hue by `n` degrees (0–360)                        |
-| `S(<n>)`  | Add `n` to saturation (percentage)                      |
-| `V(<n>)`  | Add `n` to value/brightness (percentage)                |
-| `A(<n>)`  | Add `n` to alpha/opacity (percentage)                   |
-| `[` / `]` | Push / pop turtle state (position, angle, scale, color) |
+### Draw commands
 
-Program-level directives:
+| Symbol   | Effect                                            |
+| -------- | ------------------------------------------------- |
+| `F(<n>)` | Draw forward `n` units                            |
+| `B(<n>)` | Move forward `n` units without drawing            |
+| `+(<n>)` | Rotate left (counter-clockwise) by `n` degrees    |
+| `-(<n>)` | Rotate right (clockwise) by `n` degrees           |
+| `*(<n>)` | Multiply the current scale by `n`                 |
+| `%(<n>)` | Multiply the current stroke width by `n`          |
+| `H(<n>)` | Shift hue by `n` degrees                          |
+| `S(<n>)` | Add `n` to saturation (%)                         |
+| `V(<n>)` | Add `n` to value/brightness (%)                   |
+| `A(<n>)` | Add `n` to opacity (%)                            |
+| `[`      | Push turtle state (position, angle, scale, color) |
+| `]`      | Pop turtle state                                  |
 
-| Directive                                  | Meaning                                   |
-| ------------------------------------------ | ----------------------------------------- |
-| `!<n>;`                                    | Number of expansion steps                 |
-| `@<symbols>;`                              | Axiom (initial string)                    |
-| `?<n>;`                                    | Random seed (for stochastic rules)        |
-| `<var> -> <symbols>;`                      | Deterministic rewrite rule                |
-| `<var> -> <p>~<symbols> \| <p>~<symbols>;` | Stochastic rule with branch probabilities |
+### Example — Dragon curve
 
-**Example:**
+```
+!14;
+@a;
+
+a -> a +(90) b;
+b -> a -(90) b;
+```
+
+### Example — Stochastic tree
 
 ```
 !32;
@@ -64,6 +57,14 @@ a -> 0.9 ~ F(1) +(7) %(0.9) a
 
 b -> 0.88 ~ H(10) F(1) -(6) *(0.96) %(0.9) b
    | 0.12 ~ [+(38) *(0.82) a] [-(38) H(70) *(0.82) a];
+```
+
+## Repository structure
+
+```
+compiler/      C++23 compiler — parser, rewriter, SVG renderer
+website/       Angular frontend that loads the WASM module
+build-wasm.sh  Builds the compiler to WASM and copies output into the website
 ```
 
 ## Building
@@ -85,11 +86,11 @@ Requires [Emscripten](https://emscripten.org/).
 ./build-wasm.sh
 ```
 
-The output (`LibreFractals.js` / `LibreFractals.wasm`) is placed in `website/public/wasm/`.
+Output (`LibreFractals.js` / `LibreFractals.wasm`) is placed in `website/public/wasm/`.
 
 ### Web frontend
 
-Requires Node.js and the Angular CLI.
+Requires Node.js ≥ 18 and the Angular CLI.
 
 ```bash
 cd website
@@ -99,7 +100,7 @@ npm run build   # production build
 npm run deploy  # deploy to GitHub Pages
 ```
 
-## Usage (CLI)
+## CLI usage
 
 ```
 librefractals [options] <input>
@@ -109,11 +110,9 @@ librefractals [options] <input>
 Options:
   -f, --file           Treat <input> as a file path
   -o, --output <path>  Write output to file instead of stdout
-  --svg                Output SVG instead of turtle IR
+  --svg                Output SVG
   -h, --help           Show this help message
 ```
-
-**Generate an SVG from a file:**
 
 ```bash
 ./librefractals -f --svg a.frac -o out.svg

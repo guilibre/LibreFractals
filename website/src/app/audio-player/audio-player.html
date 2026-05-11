@@ -1,0 +1,24 @@
+<div class="player">
+  <div class="controls">
+    <button class="play-btn" (click)="togglePlay()">
+      {{ playing() ? "⏸" : "▶" }}
+    </button>
+    <button
+      class="stop-btn"
+      (click)="stopAndReset()"
+      [disabled]="duration() === 0"
+    >
+      ⏹
+    </button>
+    <span class="time"
+      >{{ formatTime(currentTime()) }} / {{ formatTime(duration()) }}</span
+    >
+  </div>
+  <div class="spectrogram-wrap" (click)="seek($event)" style="cursor: pointer">
+    <canvas #canvas></canvas>
+    <div #playheadLine class="playhead-line"></div>
+    @if (!spectrogramReady()) {
+      <div class="spectrogram-loading">Computing spectrogram...</div>
+    }
+  </div>
+</div>

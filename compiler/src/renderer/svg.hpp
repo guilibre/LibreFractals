@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace Renderer {
+namespace Image {
 
 struct SvgOptions {
     float base_stroke_width = 1.F;
@@ -14,4 +14,4 @@ struct SvgOptions {
 auto to_svg(const std::vector<Codegen::TurtleCmd> &cmds,
             const SvgOptions &opts = {}) -> std::string;
 
-} // namespace Renderer
+} // namespace Image

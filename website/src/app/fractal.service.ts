@@ -1,56 +1,82 @@
 import { Injectable } from "@angular/core";
 
-interface WasmModule {
-  compile_to_svg: (source: string) => string;
-  get_diagnostics: (source: string) => string;
-  get_hover: (source: string, line: number, col: number) => string;
-  get_completions: (source: string, line: number, col: number) => string;
-}
+const TIMEOUT_MS = 10_000;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const dynamicImport = new Function("url", "return import(url)") as (
-  url: string,
-) => Promise<any>;
+interface Pending {
+  resolve: (v: string) => void;
+  reject: (e: Error) => void;
+}
 
 @Injectable({ providedIn: "root" })
 export class FractalService {
-  private modulePromise: Promise<WasmModule> | null = null;
+  private worker: Worker | null = null;
+  private pending = new Map<number, Pending>();
+  private nextId = 0;
 
-  private load(): Promise<WasmModule> {
-    if (!this.modulePromise) {
-      const base = document.baseURI;
-      const jsUrl = new URL("wasm/LibreFractals.js", base).href;
-      this.modulePromise = dynamicImport(jsUrl).then(
-        (mod: { default: (arg?: object) => Promise<WasmModule> }) =>
-          mod.default({
-            locateFile: (f: string) => new URL(`wasm/${f}`, base).href,
-          }),
-      );
+  private getWorker(): Worker {
+    if (!this.worker) {
+      this.worker = new Worker(new URL("./compiler.worker", import.meta.url), {
+        type: "module",
+      });
+      this.worker.onmessage = ({
+        data,
+      }: MessageEvent<{ id: number; result?: string; error?: string }>) => {
+        const p = this.pending.get(data.id);
+        if (!p) return;
+        this.pending.delete(data.id);
+        if (data.error !== undefined) p.reject(new Error(data.error));
+        else p.resolve(data.result ?? "");
+      };
     }
-    return this.modulePromise;
+    return this.worker;
   }
 
-  async compileSvg(source: string): Promise<string> {
-    const mod = await this.load();
-    return mod.compile_to_svg(source);
+  private call(fn: string, args: unknown[]): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const id = this.nextId++;
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        this.worker?.terminate();
+        this.worker = null;
+        reject(
+          new Error(
+            "Timeout: recursão muito profunda ou expressão muito complexa.",
+          ),
+        );
+      }, TIMEOUT_MS);
+
+      this.pending.set(id, {
+        resolve: (v) => {
+          clearTimeout(timer);
+          resolve(v);
+        },
+        reject: (e) => {
+          clearTimeout(timer);
+          reject(e);
+        },
+      });
+
+      this.getWorker().postMessage({ id, fn, args, baseUrl: document.baseURI });
+    });
   }
 
-  async getDiagnostics(source: string): Promise<string> {
-    const mod = await this.load();
-    return mod.get_diagnostics(source);
+  compileWav(source: string): Promise<string> {
+    return this.call("compile_to_wav", [source]);
   }
 
-  async getHover(source: string, line: number, col: number): Promise<string> {
-    const mod = await this.load();
-    return mod.get_hover(source, line, col);
+  compileSvg(source: string): Promise<string> {
+    return this.call("compile_to_svg", [source]);
   }
 
-  async getCompletions(
-    source: string,
-    line: number,
-    col: number,
-  ): Promise<string> {
-    const mod = await this.load();
-    return mod.get_completions(source, line, col);
+  getDiagnostics(source: string): Promise<string> {
+    return this.call("get_diagnostics", [source]);
+  }
+
+  getHover(source: string, line: number, col: number): Promise<string> {
+    return this.call("get_hover", [source, line, col]);
+  }
+
+  getCompletions(source: string, line: number, col: number): Promise<string> {
+    return this.call("get_completions", [source, line, col]);
   }
 }

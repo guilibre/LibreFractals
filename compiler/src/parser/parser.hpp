@@ -71,7 +71,7 @@ struct Rule {
 
 struct AliasDecl {
     char variable;
-    Symbol symbol;
+    std::vector<Symbol> symbols;
 };
 
 struct Program {
@@ -80,6 +80,7 @@ struct Program {
     std::vector<Symbol> axiom;
     int steps = 1;
     std::optional<uint32_t> seed;
+    std::optional<float> min_duration;
 };
 
 struct ParseResult {

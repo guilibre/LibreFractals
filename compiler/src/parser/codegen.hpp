@@ -2,7 +2,6 @@
 
 #include "parser.hpp"
 #include <string>
-#include <vector>
 
 namespace Codegen {
 

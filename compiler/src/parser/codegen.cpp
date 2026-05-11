@@ -96,7 +96,7 @@ auto emit_symbol(const Parser::Symbol &sym, const Parser::Program &program,
             } else if constexpr (std::is_same_v<T, Parser::SymbolVar>) {
                 for (const auto &alias : program.aliases) {
                     if (alias.variable == s.name) {
-                        emit_symbol(alias.symbol, program, out);
+                        emit_symbols(alias.symbols, program, out);
                         return;
                     }
                 }

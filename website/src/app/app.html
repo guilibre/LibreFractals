@@ -1,9 +1,19 @@
 <div class="layout" #layout>
   <aside class="panel-input" #inputPanel>
     <h1>LibreFractals</h1>
+    <div class="examples">
+      @for (ex of examples; track ex.label) {
+        <button class="example-btn" (click)="loadExample(ex.source)">
+          {{ ex.label }}
+        </button>
+      }
+    </div>
     <app-editor [(value)]="source"></app-editor>
     <button (click)="render()" [disabled]="loading()">
       {{ loading() ? "Rendering…" : "Render" }}
+    </button>
+    <button (click)="listen()" [disabled]="audioLoading()">
+      {{ audioLoading() ? "Generating…" : "Listen" }}
     </button>
     @if (error()) {
       <p class="error">{{ error() }}</p>
@@ -11,10 +21,24 @@
   </aside>
   <div class="resizer" (mousedown)="startResize($event)"></div>
   <main class="panel-svg">
-    @if (svg()) {
-      <div class="svg-container" [innerHTML]="svg()"></div>
-    } @else {
-      <p class="placeholder">Enter an expression and click Render.</p>
+    <div class="svg-wrap">
+      @if (svg()) {
+        <div class="svg-container" [innerHTML]="svg()"></div>
+      } @else {
+        <p class="placeholder">Enter an expression and click Render.</p>
+      }
+    </div>
+    @if (audioLoading() || wavBase64()) {
+      <div class="audio-resizer" (mousedown)="startAudioResize($event)"></div>
+      <div class="audio-strip" #audioStrip>
+        @if (audioLoading()) {
+          <div class="audio-loading">
+            <span>Gerando áudio…</span>
+          </div>
+        } @else {
+          <app-audio-player [wavBase64]="wavBase64()" />
+        }
+      </div>
     }
   </main>
 </div>

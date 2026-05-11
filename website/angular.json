@@ -26,10 +26,11 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ],
-            "outputMode": "static"
+            "styles": ["src/styles.scss"],
+            "outputMode": "static",
+            "loader": {
+              ".frac": "text"
+            }
           },
           "configurations": {
             "production": {
@@ -81,12 +82,13 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ]
+            "styles": ["src/styles.scss"]
           }
         }
       }
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }

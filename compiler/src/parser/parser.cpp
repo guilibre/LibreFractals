@@ -33,18 +33,22 @@ struct ParserState {
     }
 
     auto current_error() -> Tokenizer::Error {
-        const auto *tok = peek();
-        if (tok != nullptr)
-            return {
-                .line = tok->line,
-                .column_start = tok->column,
-                .column_end = tok->column,
-            };
-        return {
-            .line = 0,
-            .column_start = 0,
-            .column_end = 0,
-        };
+        if (pos < tokens.size()) {
+            if (const auto *tok = peek())
+                return {tok->line, tok->column, tok->column + tok->length};
+            if (const auto *err = std::get_if<Tokenizer::Error>(&tokens[pos]))
+                return *err;
+        }
+        return {0, 0, 0};
+    }
+
+    auto try_consume_error() -> const Tokenizer::Error * {
+        if (pos < tokens.size() &&
+            !std::holds_alternative<Tokenizer::Token>(tokens[pos])) {
+            ++pos;
+            return std::get_if<Tokenizer::Error>(&tokens[pos - 1]);
+        }
+        return nullptr;
     }
 };
 
@@ -58,7 +62,10 @@ auto parse_symbols(ParserState &state) -> SymbolsResult;
 
 auto parse_symbol(ParserState &state) -> SymbolResult {
     const auto *tok = state.peek();
-    if (tok == nullptr) return std::monostate{};
+    if (tok == nullptr) {
+        if (const auto *err = state.try_consume_error()) return *err;
+        return std::monostate{};
+    }
 
     // F(n)
     if (tok->type == Tokenizer::F) {
@@ -219,21 +226,17 @@ auto parse_alias(ParserState &state)
     char name = var_tok->value[0];
     state.pos++;
 
-    auto sym_result = parse_symbol(state);
-    if (std::holds_alternative<std::monostate>(sym_result))
-        return state.current_error();
-    if (std::holds_alternative<Tokenizer::Error>(sym_result))
-        return std::get<Tokenizer::Error>(sym_result);
+    auto syms_result = parse_symbols(state);
+    if (std::holds_alternative<Tokenizer::Error>(syms_result))
+        return std::get<Tokenizer::Error>(syms_result);
 
-    auto &sym = std::get<Symbol>(sym_result);
-    if (std::holds_alternative<SymbolVar>(sym) ||
-        std::holds_alternative<std::unique_ptr<SymbolBranch>>(sym))
-        return state.current_error();
+    auto &syms = std::get<std::vector<Symbol>>(syms_result);
+    if (syms.empty()) return state.current_error();
 
     if (state.expect(Tokenizer::SEMICOLON) == nullptr)
         return state.current_error();
 
-    return AliasDecl{.variable = name, .symbol = std::move(sym)};
+    return AliasDecl{.variable = name, .symbols = std::move(syms)};
 }
 
 auto parse_rule(ParserState &state)
@@ -276,7 +279,14 @@ auto parse(const std::vector<Tokenizer::TokenResult> &tokens) -> ParseResult {
 
     while (true) {
         const auto *tok = state.peek();
-        if (tok == nullptr || tok->type == Tokenizer::END_OF_FILE) break;
+        if (tok == nullptr) {
+            if (const auto *err = state.try_consume_error())
+                out.errors.push_back(*err);
+            else
+                break;
+            continue;
+        }
+        if (tok->type == Tokenizer::END_OF_FILE) break;
 
         // @ symbols ;  — axiom declaration
         if (tok->type == Tokenizer::AT) {
@@ -316,6 +326,20 @@ auto parse(const std::vector<Tokenizer::TokenResult> &tokens) -> ParseResult {
             } else {
                 out.program.seed =
                     static_cast<uint32_t>(parse_float(num->value));
+            }
+            if (state.expect(Tokenizer::SEMICOLON) == nullptr)
+                out.errors.push_back(state.current_error());
+            continue;
+        }
+
+        // $ NUMBER ;  — min audio duration (seconds)
+        if (tok->type == Tokenizer::DOLLAR) {
+            state.advance();
+            const auto *num = state.expect(Tokenizer::NUMBER);
+            if (num == nullptr) {
+                out.errors.push_back(state.current_error());
+            } else {
+                out.program.min_duration = parse_float(num->value);
             }
             if (state.expect(Tokenizer::SEMICOLON) == nullptr)
                 out.errors.push_back(state.current_error());

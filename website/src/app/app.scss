@@ -77,7 +77,30 @@
     flex-direction: column;
   }
 
-  button {
+  .examples {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  .example-btn {
+    padding: 0.3rem 0.6rem;
+    background: #2a2a2a;
+    color: #aaa;
+    border: 1px solid #444;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover {
+      background: #333;
+      color: #eee;
+    }
+  }
+
+  button:not(.example-btn) {
     padding: 0.55rem;
     background: #2a6;
     color: #fff;
@@ -110,10 +133,18 @@
   min-width: 0;
   min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  overflow: auto;
+  flex-direction: column;
+  overflow: hidden;
+
+  .svg-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    overflow: auto;
+  }
 
   .svg-container {
     width: 100%;
@@ -132,5 +163,32 @@
     color: #aaa;
     font-family: sans-serif;
     font-size: 0.95rem;
+  }
+
+  .audio-resizer {
+    height: 5px;
+    flex-shrink: 0;
+    background: #333;
+    cursor: row-resize;
+    z-index: 1;
+    &:hover {
+      background: #555;
+    }
+  }
+
+  .audio-strip {
+    height: 140px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .audio-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #888;
+    font-size: 0.85rem;
+    background: #111;
   }
 }
