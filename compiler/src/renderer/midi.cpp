@@ -122,8 +122,8 @@ auto emit_rpn(std::vector<uint8_t> &track, uint32_t &prev_tick, uint32_t tick,
 
 } // namespace
 
-auto compile(const std::vector<Codegen::TurtleCmd> &cmds, float min_duration_s)
-    -> std::vector<NoteEvent> {
+auto compile(const std::vector<Codegen::TurtleCmd> &cmds, float min_duration_s,
+             float glissando_frac) -> std::vector<NoteEvent> {
     const auto min_d = find_min_duration(cmds);
     const auto tempo_base = min_duration_s / min_d;
 
@@ -170,6 +170,7 @@ auto compile(const std::vector<Codegen::TurtleCmd> &cmds, float min_duration_s)
                 .velocity_end = vel,
                 .chain_start = !connected_to_prev,
                 .chain_end = true,
+                .glissando_frac = glissando_frac,
             });
             conn.last_note_idx = static_cast<int>(notes.size()) - 1;
             conn.pending_glissando = false;
@@ -292,13 +293,13 @@ auto write(const std::vector<NoteEvent> &notes, const std::string &path)
         const uint32_t dur = n.tick_off - n.tick_on;
 
         if (n.freq_end != n.freq) {
+            const float sweep_dur = static_cast<float>(dur) * n.glissando_frac;
             for (int s = 1; s <= GLISS_STEPS; ++s) {
                 const float t =
                     static_cast<float>(s) / static_cast<float>(GLISS_STEPS);
                 const float freq = n.freq * std::pow(n.freq_end / n.freq, t);
                 const uint32_t tick =
-                    n.tick_on +
-                    static_cast<uint32_t>(t * static_cast<float>(dur));
+                    n.tick_on + static_cast<uint32_t>(t * sweep_dur);
                 gliss_events.push_back(
                     {tick, ch, pitch_bend_value(freq, n.pitch)});
             }

@@ -128,7 +128,9 @@ auto main(int argc, char *argv[]) -> int {
 
     if (!midi_path.empty() || !wav_path.empty()) {
         const float min_dur = parse_result.program.min_duration.value_or(0.1F);
-        auto notes = Midi::compile(cmds, min_dur);
+        const float gliss_frac =
+            parse_result.program.glissando_frac.value_or(1.F);
+        auto notes = Midi::compile(cmds, min_dur, gliss_frac);
         if (!midi_path.empty()) Midi::write(notes, midi_path);
         if (!wav_path.empty()) Audio::to_wav(notes, wav_path);
     }
@@ -182,7 +184,8 @@ static auto compile_to_wav(const std::string &source) -> std::string {
     if (result.program.axiom.empty()) return "";
     auto cmds = Codegen::expand(result.program);
     const float min_dur = result.program.min_duration.value_or(0.1F);
-    auto notes = Midi::compile(cmds, min_dur);
+    const float gliss_frac = result.program.glissando_frac.value_or(1.F);
+    auto notes = Midi::compile(cmds, min_dur, gliss_frac);
     return base64_encode(Audio::to_bytes(notes));
 }
 

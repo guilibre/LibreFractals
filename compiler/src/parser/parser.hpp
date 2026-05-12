@@ -81,6 +81,7 @@ struct Program {
     int steps = 1;
     std::optional<uint32_t> seed;
     std::optional<float> min_duration;
+    std::optional<float> glissando_frac;
 };
 
 struct ParseResult {

@@ -20,10 +20,12 @@ struct NoteEvent {
     uint8_t velocity_end{};
     bool chain_start = true;
     bool chain_end = true;
+    float glissando_frac = 1.F;
 };
 
 auto compile(const std::vector<Codegen::TurtleCmd> &cmds,
-             float min_duration_s = 0.1F) -> std::vector<NoteEvent>;
+             float min_duration_s = 0.1F, float glissando_frac = 1.F)
+    -> std::vector<NoteEvent>;
 
 auto write(const std::vector<NoteEvent> &notes, const std::string &path)
     -> void;

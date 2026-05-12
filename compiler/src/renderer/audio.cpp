@@ -19,7 +19,7 @@ constexpr float TICKS_PER_SEC =
 auto asr(int i, int n) -> float {
     if (n <= 1) return 1.F;
     const int ramp = std::max(2, n / 10);
-    const float d = static_cast<float>(ramp - 1);
+    const auto d = static_cast<float>(ramp - 1);
     if (i < ramp) return static_cast<float>(i) / d;
     if (i >= n - ramp) return static_cast<float>(n - 1 - i) / d;
     return 1.F;
@@ -109,9 +109,13 @@ auto to_bytes(const std::vector<Midi::NoteEvent> &notes)
                               static_cast<float>(note_samples - 1)
                         : 0.F;
 
+                const float gliss_t =
+                    (note.glissando_frac < 1.F)
+                        ? std::min(t_norm / note.glissando_frac, 1.F)
+                        : t_norm;
                 const float freq =
                     glissando ? (note.freq *
-                                 std::pow(note.freq_end / note.freq, t_norm))
+                                 std::pow(note.freq_end / note.freq, gliss_t))
                               : note.freq;
 
                 const float vel =
@@ -131,16 +135,15 @@ auto to_bytes(const std::vector<Midi::NoteEvent> &notes)
     float peak = 0.F;
     for (const float s : buf) peak = std::max(peak, std::abs(s));
     if (peak > 0.F) {
-        const float scale = 0.9F / peak;
+        const float scale = 0.5F / peak;
         for (float &s : buf) s *= scale;
     }
 
     std::vector<int16_t> pcm;
     pcm.reserve(buf.size());
-    for (const float s : buf) {
+    for (const float s : buf)
         pcm.push_back(static_cast<int16_t>(
             std::clamp(static_cast<int>(s * 32'767.F), -32'768, 32'767)));
-    }
 
     const uint32_t data_size = static_cast<uint32_t>(pcm.size()) * 2;
     const uint32_t riff_size = 36 + data_size;

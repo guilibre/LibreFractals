@@ -140,6 +140,17 @@ auto tokenize(const std::string &input) -> std::vector<TokenResult> {
             advance();
             continue;
         }
+        if (c == '&') {
+            tokens.emplace_back(Token{
+                .type = AMPERSAND,
+                .value = "&",
+                .line = tok_line,
+                .column = tok_col,
+                .length = 1,
+            });
+            advance();
+            continue;
+        }
         if (c == '@') {
             tokens.emplace_back(Token{
                 .type = AT,

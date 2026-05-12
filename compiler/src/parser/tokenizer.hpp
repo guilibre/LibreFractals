@@ -34,6 +34,7 @@ enum TokenType : uint8_t {
     PERCENT,
     EQUALS,
     DOLLAR,
+    AMPERSAND,
 };
 
 struct Token {

@@ -1,5 +1,6 @@
 #include "parser.hpp"
 
+#include <algorithm>
 #include <sstream>
 
 namespace Parser {
@@ -340,6 +341,21 @@ auto parse(const std::vector<Tokenizer::TokenResult> &tokens) -> ParseResult {
                 out.errors.push_back(state.current_error());
             } else {
                 out.program.min_duration = parse_float(num->value);
+            }
+            if (state.expect(Tokenizer::SEMICOLON) == nullptr)
+                out.errors.push_back(state.current_error());
+            continue;
+        }
+
+        // & NUMBER ;  — glissando duration as fraction of note [0, 1]
+        if (tok->type == Tokenizer::AMPERSAND) {
+            state.advance();
+            const auto *num = state.expect(Tokenizer::NUMBER);
+            if (num == nullptr) {
+                out.errors.push_back(state.current_error());
+            } else {
+                out.program.glissando_frac =
+                    std::clamp(parse_float(num->value), 0.F, 1.F);
             }
             if (state.expect(Tokenizer::SEMICOLON) == nullptr)
                 out.errors.push_back(state.current_error());
