@@ -7,8 +7,33 @@ import {
   AfterViewInit,
   OnDestroy,
   HostListener,
+  ChangeDetectorRef,
 } from "@angular/core";
 import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
+
+async function compress(str: string): Promise<string> {
+  const cs = new CompressionStream("deflate-raw");
+  const writer = cs.writable.getWriter();
+  writer.write(new TextEncoder().encode(str));
+  writer.close();
+  const buf = await new Response(cs.readable).arrayBuffer();
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+}
+
+async function decompress(b64url: string): Promise<string> {
+  const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const ds = new DecompressionStream("deflate-raw");
+  const writer = ds.writable.getWriter();
+  writer.write(bytes);
+  writer.close();
+  return new TextDecoder().decode(
+    await new Response(ds.readable).arrayBuffer(),
+  );
+}
 import { FractalService } from "./fractal.service";
 import { EditorComponent } from "./editor/editor";
 import { AudioPlayerComponent } from "./audio-player/audio-player";
@@ -39,6 +64,7 @@ const EXAMPLES: { label: string; source: string }[] = [
 export class App implements AfterViewInit, OnDestroy {
   private fractal = inject(FractalService);
   private sanitizer = inject(DomSanitizer);
+  private cdr = inject(ChangeDetectorRef);
 
   @ViewChild("layout") layoutRef!: ElementRef<HTMLElement>;
   @ViewChild("inputPanel") inputPanelRef!: ElementRef<HTMLElement>;
@@ -48,12 +74,32 @@ export class App implements AfterViewInit, OnDestroy {
   readonly examples = EXAMPLES;
   private _source = localStorage.getItem(App.STORAGE_KEY) ?? "";
 
+  constructor() {
+    const hash = location.hash.slice(1);
+    if (hash) {
+      decompress(hash)
+        .then((src) => {
+          this._source = src;
+          this.cdr.markForCheck();
+        })
+        .catch(() => {});
+    }
+  }
+
   get source() {
     return this._source;
   }
   set source(v: string) {
     this._source = v;
     localStorage.setItem(App.STORAGE_KEY, v);
+    compress(v).then((c) => (location.hash = c));
+  }
+
+  copyShareUrl() {
+    compress(this._source).then((c) => {
+      location.hash = c;
+      navigator.clipboard.writeText(location.href);
+    });
   }
   svg = signal<SafeHtml>("");
   loading = signal(false);

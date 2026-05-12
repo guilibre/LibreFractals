@@ -184,7 +184,7 @@ static auto compile_to_wav(const std::string &source) -> std::string {
     if (result.program.axiom.empty()) return "";
     auto cmds = Codegen::expand(result.program);
     const float min_dur = result.program.min_duration.value_or(0.1F);
-    const float gliss_frac = result.program.glissando_frac.value_or(1.F);
+    const float gliss_frac = result.program.glissando_frac.value_or(0.25F);
     auto notes = Midi::compile(cmds, min_dur, gliss_frac);
     return base64_encode(Audio::to_bytes(notes));
 }

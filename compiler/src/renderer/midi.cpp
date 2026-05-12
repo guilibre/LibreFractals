@@ -186,7 +186,7 @@ auto compile(const std::vector<Codegen::TurtleCmd> &cmds, float min_duration_s,
             break;
         }
         case Codegen::TurtleCmdType::ROTATE:
-            state.freq *= std::pow(2.F, cmd.value / 360.F);
+            state.freq *= std::pow(2.F, cmd.value / 120.F);
             if (!conn.broken) conn.pending_glissando = true;
             break;
         case Codegen::TurtleCmdType::SCALE:

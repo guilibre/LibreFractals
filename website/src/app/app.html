@@ -15,6 +15,7 @@
     <button (click)="listen()" [disabled]="audioLoading()">
       {{ audioLoading() ? "Generating…" : "Listen" }}
     </button>
+    <button (click)="copyShareUrl()">Share</button>
     @if (error()) {
       <p class="error">{{ error() }}</p>
     }
