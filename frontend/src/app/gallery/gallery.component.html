@@ -1,0 +1,26 @@
+<div class="header">
+  <span class="title">Gallery</span>
+  <button class="refresh" (click)="refresh()" title="Refresh">↺</button>
+</div>
+
+@if (error()) {
+  <div class="error">{{ error() }}</div>
+}
+
+@if (entries().length === 0 && !loading()) {
+  <div class="empty">No fractals yet.</div>
+}
+
+<div class="list">
+  @for (entry of entries(); track entry.hash) {
+    <app-gallery-entry [entry]="entry" (load)="load.emit($event)" />
+  }
+</div>
+
+@if (loading()) {
+  <div class="spinner">Loading…</div>
+}
+
+@if (hasMore() && !loading()) {
+  <button class="load-more" (click)="loadMore()">Load more</button>
+}

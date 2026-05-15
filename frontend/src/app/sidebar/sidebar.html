@@ -1,0 +1,38 @@
+<h1>LibreFractals</h1>
+<div class="examples">
+  @for (ex of examples; track ex.label) {
+    <button class="example-btn" (click)="loadExample(ex.source)">
+      {{ ex.label }}
+    </button>
+  }
+</div>
+<app-editor [value]="source()" (valueChange)="sourceChange.emit($event)" />
+<button (click)="render.emit()" [disabled]="loading()">
+  {{ loading() ? 'Rendering…' : 'Render' }}
+</button>
+<button (click)="listen.emit()" [disabled]="audioLoading()">
+  {{ audioLoading() ? 'Generating…' : 'Listen' }}
+</button>
+<button (click)="share.emit()">Share</button>
+<div class="gallery-row">
+  @if (!showGalleryInput()) {
+    <button class="gallery-btn" (click)="showGalleryInput.set(true)" [disabled]="galleryAdding()">
+      {{ galleryAdding() ? 'Adding…' : 'Add to gallery' }}
+    </button>
+    <button class="gallery-btn" (click)="toggleGallery.emit()">Gallery</button>
+  } @else {
+    <input
+      class="gallery-input"
+      [(ngModel)]="galleryName"
+      placeholder="Name (optional)"
+      (keydown.enter)="submitGallery()"
+      (keydown.escape)="showGalleryInput.set(false)"
+      autofocus
+    />
+    <button class="gallery-btn" (click)="submitGallery()">Save</button>
+    <button class="gallery-cancel" (click)="showGalleryInput.set(false)">✕</button>
+  }
+</div>
+@if (error()) {
+  <p class="error">{{ error() }}</p>
+}

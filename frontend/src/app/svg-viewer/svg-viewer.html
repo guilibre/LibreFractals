@@ -1,0 +1,7 @@
+<div class="svg-wrap">
+  @if (svg()) {
+    <div class="svg-container" [innerHTML]="svg()"></div>
+  } @else {
+    <p class="placeholder">Enter an expression and click Render.</p>
+  }
+</div>

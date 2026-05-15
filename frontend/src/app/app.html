@@ -1,0 +1,35 @@
+<div class="layout" #layout>
+  <app-sidebar
+    #inputPanel
+    [source]="source"
+    [loading]="loading()"
+    [audioLoading]="audioLoading()"
+    [galleryAdding]="galleryAdding()"
+    [error]="error()"
+    (sourceChange)="source = $event"
+    (render)="render()"
+    (listen)="listen()"
+    (share)="copyShareUrl()"
+    (addToGallery)="addToGallery($event)"
+    (toggleGallery)="galleryOpen.update((v) => !v)"
+  />
+  <div class="resizer" (mousedown)="startResize($event)"></div>
+  <main class="panel-svg">
+    <app-svg-viewer [svg]="svg()" />
+    @if (audioLoading() || wavBase64()) {
+      <div class="audio-resizer" (mousedown)="startAudioResize($event)"></div>
+      <div class="audio-strip" #audioStrip>
+        @if (audioLoading()) {
+          <div class="audio-loading">
+            <span>Gerando áudio…</span>
+          </div>
+        } @else {
+          <app-audio-player [wavBase64]="wavBase64()" />
+        }
+      </div>
+    }
+  </main>
+  @if (galleryOpen()) {
+    <app-gallery (load)="loadFromGallery($event)" class="gallery-panel" />
+  }
+</div>

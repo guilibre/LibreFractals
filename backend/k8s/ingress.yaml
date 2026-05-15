@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: librefractals-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - 163-176-160-225.sslip.io
+      secretName: librefractals-tls
+  rules:
+    - host: 163-176-160-225.sslip.io
+      http:
+        paths:
+          - path: /gallery
+            pathType: Prefix
+            backend:
+              service:
+                name: librefractals-backend
+                port:
+                  number: 80

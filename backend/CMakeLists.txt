@@ -80,6 +80,8 @@ set(CMAKE_SKIP_INSTALL_RULES TRUE)
 fetchcontent_makeavailable(drogon)
 set(CMAKE_SKIP_INSTALL_RULES FALSE)
 
+find_package(ZLIB REQUIRED)
+
 set(DEPS
     drogon
 )

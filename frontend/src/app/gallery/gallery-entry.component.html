@@ -1,0 +1,15 @@
+<div class="entry" (click)="onClick()">
+  <div class="preview">
+    @if (loading()) {
+      <div class="skeleton"></div>
+    } @else if (svg()) {
+      <div class="svg-wrap" [innerHTML]="svg()"></div>
+    } @else {
+      <div class="broken">—</div>
+    }
+  </div>
+  <div class="meta">
+    <span class="name">{{ entry().name || 'Untitled' }}</span>
+    <span class="info">{{ entry().compile_ms }}ms · {{ formatDate(entry().created_at) }}</span>
+  </div>
+</div>
