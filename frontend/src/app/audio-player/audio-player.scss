@@ -24,19 +24,23 @@
   border: 1px solid #555;
   color: #eee;
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 1rem;
-  line-height: 1;
+  width: clamp(36px, 8vw, 44px);
+  height: clamp(36px, 8vw, 44px);
   padding: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 
   &:hover {
     border-color: #aaa;
     color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
 }
 

@@ -1,5 +1,7 @@
 #include "gallery.hpp"
 
+#include "../math/genealogy.hpp"
+
 #include <deque>
 #include <mutex>
 #include <ranges>
@@ -24,17 +26,43 @@ auto store_mutex() -> std::shared_mutex & {
 
 } // namespace
 
-void add(std::string hash, std::string name, int compile_ms) {
-    auto now = std::chrono::system_clock::now();
+void add(const std::string &hash, const std::string &name, int svg_bytes,
+         const std::string &topo) {
+    const auto now = std::chrono::system_clock::now();
     std::unique_lock lock(store_mutex());
-    while (!store().empty() && now - store().front().created_at > TTL)
+
+    std::vector<std::string> expired_hashes;
+    while (!store().empty() && now - store().front().created_at > TTL) {
+        expired_hashes.push_back(store().front().hash);
         store().pop_front();
-    while (store().size() >= MAX_ENTRIES) store().pop_front();
-    store().push_back({std::move(hash), std::move(name), compile_ms, now});
+    }
+    while (store().size() >= MAX_ENTRIES) {
+        expired_hashes.push_back(store().front().hash);
+        store().pop_front();
+    }
+    if (!expired_hashes.empty())
+        Math::Genealogy::graph().remove_expired(expired_hashes);
+
+    std::vector<std::pair<std::string, std::string>> existing;
+    existing.reserve(store().size());
+    for (const auto &e : store()) {
+        if (e.hash == hash) return;
+        existing.emplace_back(e.hash, e.topo);
+    }
+
+    store().push_back({
+        .hash = hash,
+        .name = name,
+        .svg_bytes = svg_bytes,
+        .topo = topo,
+        .created_at = now,
+    });
+
+    if (!existing.empty()) Math::Genealogy::graph().link(hash, topo, existing);
 }
 
 auto page(int page_num, int limit) -> Page {
-    auto now = std::chrono::system_clock::now();
+    const auto now = std::chrono::system_clock::now();
     std::shared_lock lock(store_mutex());
 
     Page result;

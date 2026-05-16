@@ -191,6 +191,13 @@ export class AudioPlayerComponent implements OnChanges, OnDestroy {
     this.hidePlayheadLine();
   }
 
+  seekTouch(event: TouchEvent) {
+    event.preventDefault();
+    const touch = event.touches.item(0);
+    if (!touch) return;
+    this.seek({ clientX: touch.clientX } as unknown as MouseEvent);
+  }
+
   seek(event: MouseEvent) {
     if (!this.audioBuffer) return;
     const canvas = this.canvasRef.nativeElement;

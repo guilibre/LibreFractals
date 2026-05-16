@@ -9,15 +9,14 @@
     (sourceChange)="source = $event"
     (render)="render()"
     (listen)="listen()"
-    (share)="copyShareUrl()"
     (addToGallery)="addToGallery($event)"
     (toggleGallery)="galleryOpen.update((v) => !v)"
   />
-  <div class="resizer" (mousedown)="startResize($event)"></div>
+  <app-resize-handle [direction]="isVertical ? 'vertical' : 'horizontal'" (dragDelta)="onSidebarResize($event)" />
   <main class="panel-svg">
     <app-svg-viewer [svg]="svg()" />
     @if (audioLoading() || wavBase64()) {
-      <div class="audio-resizer" (mousedown)="startAudioResize($event)"></div>
+      <app-resize-handle direction="vertical" (dragDelta)="onAudioResize($event)" />
       <div class="audio-strip" #audioStrip>
         @if (audioLoading()) {
           <div class="audio-loading">
@@ -30,6 +29,7 @@
     }
   </main>
   @if (galleryOpen()) {
-    <app-gallery (load)="loadFromGallery($event)" class="gallery-panel" />
+    <app-resize-handle [direction]="isVertical ? 'vertical' : 'horizontal'" (dragDelta)="onGalleryResize($event)" />
+    <app-gallery #galleryPanel (load)="loadFromGallery($event)" class="gallery-panel" />
   }
 </div>

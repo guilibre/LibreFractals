@@ -3,6 +3,7 @@ add_executable(Backend
     controllers/gallery.cpp
     routes/gallery.cpp
     store/gallery.cpp
+    math/genealogy.cpp
     util/encoding.cpp
     util/http.cpp
     util/json.cpp

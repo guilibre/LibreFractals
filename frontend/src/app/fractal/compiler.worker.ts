@@ -3,6 +3,7 @@
 interface WasmModule {
   compile_to_wav: (source: string) => string;
   compile_to_svg: (source: string) => string;
+  get_topo_string: (source: string) => string;
   get_diagnostics: (source: string) => string;
   get_hover: (source: string, line: number, col: number) => string;
   get_completions: (source: string, line: number, col: number) => string;

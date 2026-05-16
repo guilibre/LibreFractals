@@ -135,19 +135,18 @@ auto main(int argc, char *argv[]) -> int {
         if (!wav_path.empty()) Audio::to_wav(notes, wav_path);
     }
 
-    if (svg_path.empty() && midi_path.empty() && wav_path.empty()) {
+    if (!ir_path.empty()) {
         std::string ir = Codegen::to_string(cmds);
-        if (!ir_path.empty()) {
-            std::ofstream out(ir_path);
-            if (!out) {
-                std::cerr << "Error: cannot open output file: " << ir_path
-                          << "\n";
-                return 1;
-            }
-            out << ir;
-        } else {
-            std::cout << ir;
+        std::ofstream out(ir_path);
+        if (!out) {
+            std::cerr << "Error: cannot open output file: " << ir_path << "\n";
+            return 1;
         }
+        out << ir;
+    } else if (svg_path.empty() && midi_path.empty() && wav_path.empty()) {
+        std::cerr << "Error: no output specified\n\n";
+        usage(argv[0]);
+        return 1;
     }
 
     return 0;
@@ -210,6 +209,71 @@ static auto compile_to_turtle(const std::string &source) -> std::string {
     return info + Codegen::to_string(cmds);
 }
 
+static auto get_topo_string(const std::string &source) -> std::string {
+    auto tokens = Tokenizer::tokenize(source);
+    auto result = Parser::parse(tokens);
+    if (result.program.axiom.empty()) return "";
+    result.program.steps = 8;
+    result.program.seed = 0;
+    auto cmds = Codegen::expand(result.program);
+
+    std::string topo;
+    topo.reserve(std::min(cmds.size() * 8, size_t{4096}));
+    for (auto &cmd : cmds) {
+        if (topo.size() >= 4096) break;
+        char tag;
+        bool has_value = true;
+        switch (cmd.type) {
+        case Codegen::TurtleCmdType::FORWARD:
+            tag = 'F';
+            break;
+        case Codegen::TurtleCmdType::BLANK:
+            tag = 'B';
+            break;
+        case Codegen::TurtleCmdType::ROTATE:
+            tag = 'R';
+            break;
+        case Codegen::TurtleCmdType::SCALE:
+            tag = 'S';
+            break;
+        case Codegen::TurtleCmdType::STROKE_WIDTH:
+            tag = 'W';
+            break;
+        case Codegen::TurtleCmdType::PUSH:
+            tag = 'P';
+            has_value = false;
+            break;
+        case Codegen::TurtleCmdType::POP:
+            tag = 'Q';
+            has_value = false;
+            break;
+        case Codegen::TurtleCmdType::HUE:
+            tag = 'H';
+            break;
+        case Codegen::TurtleCmdType::SATURATION:
+            tag = 'T';
+            break;
+        case Codegen::TurtleCmdType::VALUE:
+            tag = 'V';
+            break;
+        case Codegen::TurtleCmdType::ALPHA:
+            tag = 'A';
+            break;
+        default:
+            tag = 'X';
+            has_value = false;
+            break;
+        }
+        topo += tag;
+        if (has_value) {
+            char buf[32];
+            std::snprintf(buf, sizeof(buf), "%.2g", cmd.value);
+            topo += buf;
+        }
+    }
+    return topo;
+}
+
 static auto lsp_get_diagnostics(const std::string &source) -> std::string {
     return Lsp::get_diagnostics(source);
 }
@@ -230,6 +294,7 @@ EMSCRIPTEN_BINDINGS(librefractals) {
     emscripten::function("compile_to_wav", &compile_to_wav);
     emscripten::function("compile_to_svg", &compile_to_svg);
     emscripten::function("compile_to_turtle", &compile_to_turtle);
+    emscripten::function("get_topo_string", &get_topo_string);
     emscripten::function("get_diagnostics", &lsp_get_diagnostics);
     emscripten::function("get_hover", &lsp_get_hover);
     emscripten::function("get_completions", &lsp_get_completions);

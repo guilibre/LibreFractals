@@ -7,7 +7,7 @@ namespace Codegen {
 
 enum class TurtleCmdType : uint8_t {
     FORWARD,
-    GAP,
+    BLANK,
     ROTATE,
     SCALE,
     STROKE_WIDTH,

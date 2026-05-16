@@ -1,7 +1,7 @@
 import { Component, input, output, inject, signal, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FractalService } from '../fractal/fractal.service';
-import { GalleryEntry } from './gallery.service';
+import { GalleryEntry, GalleryService, RelativeEntry } from './gallery.service';
 import { decompress } from '../utils/url-state';
 
 @Component({
@@ -14,10 +14,14 @@ export class GalleryEntryComponent implements OnInit {
   load = output<string>();
 
   private fractal = inject(FractalService);
+  private galleryService = inject(GalleryService);
   private sanitizer = inject(DomSanitizer);
 
   svg = signal<SafeHtml>('');
   loading = signal(true);
+  relatives = signal<RelativeEntry[]>([]);
+  relativesLoading = signal(false);
+  showRelatives = signal(false);
 
   ngOnInit(): void {
     void (async () => {
@@ -37,6 +41,39 @@ export class GalleryEntryComponent implements OnInit {
     void (async () => {
       try {
         const source = await decompress(this.entry().hash);
+        this.load.emit(source);
+      } catch {
+        // ignore
+      }
+    })();
+  }
+
+  toggleRelatives(event: Event): void {
+    event.stopPropagation();
+    if (this.showRelatives()) {
+      this.showRelatives.set(false);
+      return;
+    }
+    this.relativesLoading.set(true);
+    void (async () => {
+      try {
+        const list = await this.galleryService.getRelatives(this.entry().hash);
+        this.relatives.set(list);
+        this.showRelatives.set(true);
+      } catch {
+        this.relatives.set([]);
+        this.showRelatives.set(true);
+      } finally {
+        this.relativesLoading.set(false);
+      }
+    })();
+  }
+
+  loadRelative(hash: string, event: Event): void {
+    event.stopPropagation();
+    void (async () => {
+      try {
+        const source = await decompress(hash);
         this.load.emit(source);
       } catch {
         // ignore

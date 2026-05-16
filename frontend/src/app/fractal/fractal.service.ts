@@ -56,6 +56,10 @@ export class FractalService {
     });
   }
 
+  getTopoString(source: string): Promise<string> {
+    return this.call('get_topo_string', [source]);
+  }
+
   compileWav(source: string): Promise<string> {
     return this.call('compile_to_wav', [source]);
   }

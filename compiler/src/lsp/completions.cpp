@@ -25,7 +25,7 @@ constexpr std::array<CompletionItem, 11> k_builtins = {{
     },
     {
         .label = "B",
-        .detail = "Move backward drawing a line",
+        .detail = "Move forward without drawing a line",
         .kind = "builtin",
     },
     {
@@ -75,7 +75,7 @@ constexpr std::array<CompletionItem, 11> k_builtins = {{
     },
 }};
 
-constexpr std::array<CompletionItem, 3> k_keywords = {{
+constexpr std::array<CompletionItem, 5> k_keywords = {{
     {
         .label = "@",
         .detail = "Axiom declaration: @ symbols;",
@@ -89,6 +89,16 @@ constexpr std::array<CompletionItem, 3> k_keywords = {{
     {
         .label = "?",
         .detail = "Random seed declaration: ? n;",
+        .kind = "keyword",
+    },
+    {
+        .label = "$",
+        .detail = "Min duration declaration: $ n;",
+        .kind = "keyword",
+    },
+    {
+        .label = "&",
+        .detail = "Glissando fraction declaration: & n;",
         .kind = "keyword",
     },
 }};
@@ -131,8 +141,11 @@ auto get_completions(const std::string &source, size_t line, size_t col)
             break;
         case Tokenizer::BANG:
         case Tokenizer::QUESTION:
+        case Tokenizer::DOLLAR:
+        case Tokenizer::AMPERSAND:
             ctx = Context::NumberExpected;
             break;
+        case Tokenizer::EQUALS:
         case Tokenizer::ARROW:
         case Tokenizer::BAR:
             ctx = Context::SymbolList;

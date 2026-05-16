@@ -30,7 +30,7 @@ auto find_min_duration(const std::vector<Codegen::TurtleCmd> &cmds) -> float {
     for (const auto &cmd : cmds) {
         switch (cmd.type) {
         case Codegen::TurtleCmdType::FORWARD:
-        case Codegen::TurtleCmdType::GAP:
+        case Codegen::TurtleCmdType::BLANK:
             min_d = std::min(min_d, cmd.value * tempo_scale);
             break;
         case Codegen::TurtleCmdType::SCALE:
@@ -149,10 +149,14 @@ auto compile(const std::vector<Codegen::TurtleCmd> &cmds, float min_duration_s,
         case Codegen::TurtleCmdType::FORWARD: {
             const bool connected_to_prev =
                 conn.last_note_idx >= 0 && !conn.broken;
+            const float start_freq =
+                (connected_to_prev && conn.pending_glissando &&
+                 glissando_frac > 0.F)
+                    ? notes[static_cast<size_t>(conn.last_note_idx)].freq_end
+                    : state.freq;
             if (connected_to_prev) {
                 auto &prev = notes[static_cast<size_t>(conn.last_note_idx)];
                 prev.chain_end = false;
-                if (conn.pending_glissando) prev.freq_end = state.freq;
                 if (conn.pending_fade)
                     prev.velocity_end = amplitude_to_velocity(state.amplitude);
             }
@@ -163,7 +167,7 @@ auto compile(const std::vector<Codegen::TurtleCmd> &cmds, float min_duration_s,
             notes.push_back({
                 .tick_on = state.midi_tick,
                 .tick_off = std::min(state.midi_tick + ticks, MAX_TICKS),
-                .freq = state.freq,
+                .freq = start_freq,
                 .freq_end = state.freq,
                 .pitch = freq_to_pitch(state.freq),
                 .velocity = vel,
@@ -179,7 +183,7 @@ auto compile(const std::vector<Codegen::TurtleCmd> &cmds, float min_duration_s,
             state.midi_tick += ticks;
             break;
         }
-        case Codegen::TurtleCmdType::GAP: {
+        case Codegen::TurtleCmdType::BLANK: {
             const auto dur_s = cmd.value * tempo_base * state.tempo_scale;
             state.midi_tick += static_cast<uint32_t>(dur_s * TICKS_PER_SEC);
             conn.broken = true;
@@ -286,9 +290,22 @@ auto write(const std::vector<NoteEvent> &notes, const std::string &path)
     for (const auto &n : sorted_notes) {
         const uint8_t ch = alloc_channel(n.tick_on);
         voices[ch - FIRST_CH].tick_off = n.tick_off;
-        events.push_back({n.tick_on, 0, ch, n.pitch, n.velocity,
-                          pitch_bend_value(n.freq, n.pitch)});
-        events.push_back({n.tick_off, 1, ch, n.pitch, 0, 0});
+        events.push_back({
+            .tick = n.tick_on,
+            .type = 0,
+            .ch = ch,
+            .pitch = n.pitch,
+            .velocity = n.velocity,
+            .bend = pitch_bend_value(n.freq, n.pitch),
+        });
+        events.push_back({
+            .tick = n.tick_off,
+            .type = 1,
+            .ch = ch,
+            .pitch = n.pitch,
+            .velocity = 0,
+            .bend = 0,
+        });
 
         const uint32_t dur = n.tick_off - n.tick_on;
 
@@ -300,8 +317,12 @@ auto write(const std::vector<NoteEvent> &notes, const std::string &path)
                 const float freq = n.freq * std::pow(n.freq_end / n.freq, t);
                 const uint32_t tick =
                     n.tick_on + static_cast<uint32_t>(t * sweep_dur);
-                gliss_events.push_back(
-                    {tick, ch, pitch_bend_value(freq, n.pitch)});
+                if (tick >= n.tick_off) break;
+                gliss_events.push_back({
+                    .tick = tick,
+                    .ch = ch,
+                    .bend = pitch_bend_value(freq, n.pitch),
+                });
             }
         }
 
@@ -318,18 +339,23 @@ auto write(const std::vector<NoteEvent> &notes, const std::string &path)
                 const uint32_t tick =
                     n.tick_on +
                     static_cast<uint32_t>(t * static_cast<float>(dur));
-                fade_events.push_back({tick, ch, expr});
+                fade_events.push_back({
+                    .tick = tick,
+                    .ch = ch,
+                    .expr = expr,
+                });
             }
         }
     }
 
-    std::ranges::stable_sort(events, [](const RawEvent &a, const RawEvent &b) {
-        return a.tick < b.tick;
-    });
-    std::ranges::stable_sort(gliss_events,
-                             [](const GlissEvent &a, const GlissEvent &b) {
+    std::ranges::stable_sort(events,
+                             [](const RawEvent &a, const RawEvent &b) -> bool {
                                  return a.tick < b.tick;
                              });
+    std::ranges::stable_sort(
+        gliss_events, [](const GlissEvent &a, const GlissEvent &b) -> bool {
+            return a.tick < b.tick;
+        });
     std::ranges::stable_sort(
         fade_events,
         [](const FadeEvent &a, const FadeEvent &b) { return a.tick < b.tick; });
@@ -347,12 +373,35 @@ auto write(const std::vector<NoteEvent> &notes, const std::string &path)
     std::vector<MergedEvent> merged;
     merged.reserve(events.size() + gliss_events.size() + fade_events.size());
     for (const auto &e : events)
-        merged.push_back(
-            {e.tick, e.type, e.ch, e.pitch, e.velocity, e.bend, 0});
+        merged.push_back({
+            .tick = e.tick,
+            .type = e.type,
+            .ch = e.ch,
+            .pitch = e.pitch,
+            .velocity = e.velocity,
+            .bend = e.bend,
+            .expr = 0,
+        });
     for (const auto &e : gliss_events)
-        merged.push_back({e.tick, 2, e.ch, 0, 0, e.bend, 0});
+        merged.push_back({
+            .tick = e.tick,
+            .type = 2,
+            .ch = e.ch,
+            .pitch = 0,
+            .velocity = 0,
+            .bend = e.bend,
+            .expr = 0,
+        });
     for (const auto &e : fade_events)
-        merged.push_back({e.tick, 3, e.ch, 0, 0, 0, e.expr});
+        merged.push_back({
+            .tick = e.tick,
+            .type = 3,
+            .ch = e.ch,
+            .pitch = 0,
+            .velocity = 0,
+            .bend = 0,
+            .expr = e.expr,
+        });
     std::ranges::stable_sort(merged,
                              [](const MergedEvent &a, const MergedEvent &b) {
                                  return a.tick < b.tick;

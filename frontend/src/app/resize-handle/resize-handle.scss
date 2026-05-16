@@ -1,0 +1,55 @@
+:host {
+  display: contents;
+}
+
+.handle {
+  background: #333;
+  flex-shrink: 0;
+  z-index: 1;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    opacity: 0.4;
+    transition: opacity 0.15s;
+  }
+
+  &:hover {
+    background: #555;
+
+    &::before {
+      opacity: 0.9;
+    }
+  }
+}
+
+:host([direction='horizontal']) .handle {
+  width: 5px;
+  cursor: col-resize;
+  align-self: stretch;
+
+  &::before {
+    width: 3px;
+    height: 24px;
+    background: radial-gradient(circle, #aaa 1.5px, transparent 1.5px);
+    background-size: 3px 8px;
+    background-repeat: repeat-y;
+  }
+}
+
+:host([direction='vertical']) .handle {
+  height: 5px;
+  cursor: row-resize;
+  align-self: stretch;
+
+  &::before {
+    height: 3px;
+    width: 24px;
+    background: radial-gradient(circle, #aaa 1.5px, transparent 1.5px);
+    background-size: 8px 3px;
+    background-repeat: repeat-x;
+  }
+}

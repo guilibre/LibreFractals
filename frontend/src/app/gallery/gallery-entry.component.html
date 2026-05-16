@@ -10,6 +10,24 @@
   </div>
   <div class="meta">
     <span class="name">{{ entry().name || 'Untitled' }}</span>
-    <span class="info">{{ entry().compile_ms }}ms · {{ formatDate(entry().created_at) }}</span>
+    <span class="info">{{ (entry().svg_bytes / 1024).toFixed(1) }}KB · {{ formatDate(entry().created_at) }}</span>
   </div>
+  <button class="relatives-btn" (click)="toggleRelatives($event)" [disabled]="relativesLoading()">
+    {{ relativesLoading() ? '…' : showRelatives() ? 'fechar' : 'parentes' }}
+  </button>
 </div>
+
+@if (showRelatives()) {
+  <div class="relatives-panel">
+    @if (relatives().length === 0) {
+      <span class="no-relatives">nenhum parente encontrado</span>
+    } @else {
+      @for (rel of relatives(); track rel.hash) {
+        <div class="relative-item" (click)="loadRelative(rel.hash, $event)">
+          <span class="rel-badge" [class]="rel.relation">{{ rel.relation }}</span>
+          <span class="rel-score">{{ (rel.similarity * 100).toFixed(0) }}%</span>
+        </div>
+      }
+    }
+  </div>
+}

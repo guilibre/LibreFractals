@@ -9,7 +9,8 @@ namespace Store::Gallery {
 struct Entry {
     std::string hash;
     std::string name;
-    int compile_ms;
+    int svg_bytes;
+    std::string topo;
     std::chrono::system_clock::time_point created_at;
 };
 
@@ -18,7 +19,8 @@ struct Page {
     int total;
 };
 
-void add(std::string hash, std::string name, int compile_ms);
+void add(const std::string &hash, const std::string &name, int svg_bytes,
+         const std::string &topo);
 auto page(int page_num, int limit) -> Page;
 
 } // namespace Store::Gallery

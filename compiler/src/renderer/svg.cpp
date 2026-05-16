@@ -96,7 +96,7 @@ auto simulate(const Cmds &cmds, TurtleState init, Visitor &&visit) -> void {
             cur.y = y2;
             break;
         }
-        case Codegen::TurtleCmdType::GAP: {
+        case Codegen::TurtleCmdType::BLANK: {
             float rad = cur.angle * std::numbers::pi_v<float> / 180.F;
             cur.x += cur.scale * cmd.value * std::cos(rad);
             cur.y += cur.scale * cmd.value * std::sin(rad);

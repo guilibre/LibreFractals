@@ -35,7 +35,6 @@ export class SidebarComponent {
   readonly sourceChange = output<string>();
   readonly render = output();
   readonly listen = output();
-  readonly share = output();
   readonly addToGallery = output<string>();
   readonly toggleGallery = output();
 

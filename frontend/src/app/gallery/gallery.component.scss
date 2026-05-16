@@ -38,6 +38,11 @@
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 200px));
+  gap: 1px;
+  background: #333;
+  align-content: start;
 }
 
 .empty,

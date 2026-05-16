@@ -17,46 +17,22 @@
   }
 }
 
-.resizer {
-  background: #333;
-  flex-shrink: 0;
-  z-index: 1;
-
-  .layout:not(.vertical) & {
-    width: 5px;
-    cursor: col-resize;
-    align-self: stretch;
-    &:hover {
-      background: #555;
-    }
-  }
-
-  .layout.vertical & {
-    height: 5px;
-    cursor: row-resize;
-    align-self: stretch;
-    &:hover {
-      background: #555;
-    }
-  }
-}
-
 app-sidebar {
   .layout:not(.vertical) & {
-    width: 320px;
-    min-width: 160px;
+    width: min(320px, 42vw);
+    min-width: 140px;
     min-height: 0;
   }
 
   .layout.vertical & {
-    height: 280px;
-    min-height: 120px;
+    height: min(260px, 38vh);
+    min-height: 100px;
     min-width: 0;
   }
 }
 
 .gallery-panel {
-  width: 240px;
+  width: min(240px, 38vw);
   flex-shrink: 0;
   border-left: 1px solid #333;
   overflow-y: auto;
@@ -70,6 +46,19 @@ app-sidebar {
   }
 }
 
+@media (max-width: 400px) {
+  app-sidebar {
+    .layout:not(.vertical) & {
+      width: 180px;
+      min-width: 120px;
+    }
+  }
+
+  .gallery-panel {
+    width: 160px;
+  }
+}
+
 .panel-svg {
   flex: 1;
   min-width: 0;
@@ -77,17 +66,6 @@ app-sidebar {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-
-  .audio-resizer {
-    height: 5px;
-    flex-shrink: 0;
-    background: #333;
-    cursor: row-resize;
-    z-index: 1;
-    &:hover {
-      background: #555;
-    }
-  }
 
   .audio-strip {
     height: 140px;

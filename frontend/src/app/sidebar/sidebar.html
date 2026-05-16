@@ -1,23 +1,23 @@
 <h1>LibreFractals</h1>
-<div class="examples">
+<select class="examples-select" (change)="loadExample($any($event.target).value); $any($event.target).value = ''">
+  <option value="" disabled selected>Examples…</option>
   @for (ex of examples; track ex.label) {
-    <button class="example-btn" (click)="loadExample(ex.source)">
-      {{ ex.label }}
-    </button>
+    <option [value]="ex.source">{{ ex.label }}</option>
   }
-</div>
+</select>
 <app-editor [value]="source()" (valueChange)="sourceChange.emit($event)" />
-<button (click)="render.emit()" [disabled]="loading()">
-  {{ loading() ? 'Rendering…' : 'Render' }}
-</button>
-<button (click)="listen.emit()" [disabled]="audioLoading()">
-  {{ audioLoading() ? 'Generating…' : 'Listen' }}
-</button>
-<button (click)="share.emit()">Share</button>
+<div class="action-buttons">
+  <button (click)="render.emit()" [disabled]="loading()">
+    {{ loading() ? 'Rendering…' : 'Render' }}
+  </button>
+  <button (click)="listen.emit()" [disabled]="audioLoading()">
+    {{ audioLoading() ? 'Generating…' : 'Listen' }}
+  </button>
+</div>
 <div class="gallery-row">
   @if (!showGalleryInput()) {
     <button class="gallery-btn" (click)="showGalleryInput.set(true)" [disabled]="galleryAdding()">
-      {{ galleryAdding() ? 'Adding…' : 'Add to gallery' }}
+      {{ galleryAdding() ? 'Adding…' : '+ Gallery' }}
     </button>
     <button class="gallery-btn" (click)="toggleGallery.emit()">Gallery</button>
   } @else {

@@ -73,7 +73,7 @@ auto emit_symbol(const Parser::Symbol &sym, const Parser::Program &program,
             if constexpr (std::is_same_v<T, Parser::SymbolF>)
                 out.push_back({TurtleCmdType::FORWARD, s.distance});
             else if constexpr (std::is_same_v<T, Parser::SymbolB>)
-                out.push_back({TurtleCmdType::GAP, s.distance});
+                out.push_back({TurtleCmdType::BLANK, s.distance});
             else if constexpr (std::is_same_v<T, Parser::SymbolRotate>)
                 out.push_back({TurtleCmdType::ROTATE, s.angle});
             else if constexpr (std::is_same_v<T, Parser::SymbolScale>)
@@ -176,8 +176,8 @@ auto to_string(const std::vector<TurtleCmd> &cmds) -> std::string {
         case TurtleCmdType::FORWARD:
             ss << "FORWARD " << cmd.value << '\n';
             break;
-        case TurtleCmdType::GAP:
-            ss << "GAP " << cmd.value << '\n';
+        case TurtleCmdType::BLANK:
+            ss << "BLANK " << cmd.value << '\n';
             break;
         case TurtleCmdType::ROTATE:
             ss << "ROTATE " << cmd.value << '\n';

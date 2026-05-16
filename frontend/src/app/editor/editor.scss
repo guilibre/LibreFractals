@@ -13,8 +13,8 @@
   background: #111;
   color: #cfc;
   font-family: monospace;
-  font-size: 0.85rem;
-  line-height: 1.5;
+  font-size: 0.78rem;
+  line-height: 1.35;
   border: 1px solid #333;
   border-radius: 4px;
   outline: none;
@@ -31,7 +31,7 @@
 }
 
 :host ::ng-deep .cm-content {
-  padding: 0.6rem;
+  padding: 0.35rem 0.5rem;
   caret-color: #cfc;
 }
 

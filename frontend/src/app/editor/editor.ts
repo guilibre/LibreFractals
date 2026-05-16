@@ -15,6 +15,7 @@ import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, tooltips } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { lintGutter } from '@codemirror/lint';
+import { closeCompletion } from '@codemirror/autocomplete';
 import { FractalService } from '../fractal/fractal.service';
 import { diagnosticsExtension, completionsExtension, hoverExtension } from './extensions';
 
@@ -43,7 +44,7 @@ export class EditorComponent implements AfterViewInit, OnDestroy, OnChanges {
         doc: this.value,
         extensions: [
           history(),
-          keymap.of([...defaultKeymap, ...historyKeymap]),
+          keymap.of([...defaultKeymap, ...historyKeymap, { key: 'Escape', run: closeCompletion }]),
           lintGutter(),
           diagnosticsExtension(this.fractal),
           completionsExtension(this.fractal),

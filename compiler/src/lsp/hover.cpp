@@ -43,6 +43,12 @@ auto token_description(const Tokenizer::Token &tok) -> const char * {
         return "**`]`** — End branch: pop turtle state from stack";
     case Tokenizer::BAR:
         return "**`|`** — Probabilistic branch separator";
+    case Tokenizer::DOLLAR:
+        return "**`$`** — Min duration declaration: `$ n;` (seconds)";
+    case Tokenizer::AMPERSAND:
+        return "**`&`** — Glissando fraction declaration: `& n;` (0 to 1)";
+    case Tokenizer::EQUALS:
+        return "**`=`** — Alias assignment: `variable = symbols;`";
     case Tokenizer::TILDE:
         return "**`~`** — Probability separator: `p~ symbols`";
     case Tokenizer::SEMICOLON:

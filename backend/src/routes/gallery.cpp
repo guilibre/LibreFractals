@@ -9,7 +9,7 @@ void register_all(drogon::HttpAppFramework &app) {
     app.registerHandler(
         "/gallery",
         [](const drogon::HttpRequestPtr &req,
-           std::function<void(const drogon::HttpResponsePtr &)> &&cb) {
+           std::function<void(const drogon::HttpResponsePtr &)> &&cb) -> void {
             if (req->method() == drogon::Options) {
                 auto resp = drogon::HttpResponse::newHttpResponse();
                 resp->addHeader("Access-Control-Allow-Origin", "*");
@@ -31,6 +31,28 @@ void register_all(drogon::HttpAppFramework &app) {
                                            "method not allowed"));
         },
         {drogon::Get, drogon::Post, drogon::Options});
+
+    app.registerHandler(
+        "/gallery/{hash}/relatives",
+        [](const drogon::HttpRequestPtr &req,
+           std::function<void(const drogon::HttpResponsePtr &)> &&cb,
+           const std::string &hash) -> void {
+            if (req->method() == drogon::Options) {
+                auto resp = drogon::HttpResponse::newHttpResponse();
+                resp->addHeader("Access-Control-Allow-Origin", "*");
+                resp->addHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+                resp->addHeader("Access-Control-Allow-Headers", "Content-Type");
+                std::move(cb)(resp);
+                return;
+            }
+            if (req->method() == drogon::Get) {
+                Controller::Gallery::get_relatives(req, std::move(cb), hash);
+                return;
+            }
+            std::move(cb)(Json::json_error(drogon::k405MethodNotAllowed,
+                                           "method not allowed"));
+        },
+        {drogon::Get, drogon::Options});
 }
 
 } // namespace Routes::Gallery
